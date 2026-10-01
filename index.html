@@ -2,13 +2,14 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Склад 36×36 м — 13 окон (12 правая стена + 1 фронт)</title>
+    <title>Склад 36×36 м — 5 вариантов стеллажей</title>
     <style>
         body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background: #1a1a2e; }
         #controls {
             position: absolute; top: 10px; left: 10px; color: white;
             background: rgba(0,0,0,0.9); padding: 15px; border-radius: 8px;
-            font-size: 13px; line-height: 1.5; max-width: 400px; z-index: 100;
+            font-size: 13px; line-height: 1.5; max-width: 420px; z-index: 100;
+            max-height: 95vh; overflow-y: auto;
         }
         #controls h2 { margin: 0 0 10px 0; color: #ffd700; font-size: 16px; }
         .btn {
@@ -18,23 +19,26 @@
         }
         .btn:hover { background: #444; }
         .btn.active { background: #ffd700; color: #000; border-color: #ffd700; }
+        .btn.recommended { border-color: #2ecc71; }
         .legend { display: flex; align-items: center; margin: 3px 0; font-size: 12px; }
         .color-box { width: 14px; height: 14px; margin-right: 8px; border: 1px solid #555; flex-shrink: 0; }
         #info {
             position: absolute; bottom: 10px; left: 10px; color: white;
             background: rgba(0,0,0,0.85); padding: 12px; border-radius: 8px;
-            font-size: 12px; max-width: 400px;
+            font-size: 12px; max-width: 420px;
         }
     </style>
 </head>
 <body>
 <div id="controls">
-    <h2>🏭 Склад 36×36 м (13 окон)</h2>
-    <button class="btn active" onclick="showVariant(1)">1️⃣ Вариант 1: 4 стеллажа</button>
-    <button class="btn" onclick="showVariant(2)">2️⃣ Вариант 2: 1 стеллаж (слева)</button>
-    <button class="btn" onclick="showVariant(3)">3️⃣ Вариант 3: 2 высоких стеллажа</button>
+    <h2>🏭 Склад 36×36 м — 5 вариантов</h2>
+    <button class="btn" onclick="showVariant(1)">1️⃣ Вариант 1: 4 коротких стеллажа</button>
+    <button class="btn" onclick="showVariant(2)">2️⃣ Вариант 2: 2 длинных (с двух сторон)</button>
+    <button class="btn" onclick="showVariant(3)">3️⃣ Вариант 3: 2 высоких (5 м, центр)</button>
+    <button class="btn recommended" onclick="showVariant(4)">4️⭐ Вариант 4: 1 ряд у глухой стены</button>
+    <button class="btn recommended" onclick="showVariant(5)">5️⭐ Вариант 5: 1 ряд + резерв</button>
     <hr style="border-color:#555; margin: 10px 0;">
-    <div class="legend"><div class="color-box" style="background:#E0F7FA"></div>Окна (12 правая стена + 1 фронт)</div>
+    <div class="legend"><div class="color-box" style="background:#E0F7FA"></div>Окна (12+1 шт)</div>
     <div class="legend"><div class="color-box" style="background:#e8d44d"></div>Колонны (15 шт)</div>
     <div class="legend"><div class="color-box" style="background:#888"></div>Второй этаж (14×31 м)</div>
     <div class="legend"><div class="color-box" style="background:#4a90e2"></div>Офис 14×4 м</div>
@@ -42,12 +46,13 @@
     <div class="legend"><div class="color-box" style="background:#2c3e50"></div>Ворота (4×4 м)</div>
     <div class="legend"><div class="color-box" style="background:#4682B4"></div>Лестница на 2-й этаж</div>
     <div class="legend"><div class="color-box" style="background:#2ecc71"></div>Стеллажи</div>
+    <div class="legend"><div class="color-box" style="background:#9b59b6"></div>Резерв расширения</div>
     <div class="legend"><div class="color-box" style="background:#8B4513"></div>Паллеты</div>
 </div>
 
 <div id="info">
     <b>Управление:</b> ЛКМ — вращение | ПКМ — перемещение | Колесо — зум<br>
-    <i>12 окон на правой стене (AJ1:AJ36), 1 окно на фронтальной стене (AH1).</i>
+    <i>⭐ Варианты 4 и 5 — рекомендованы экспертной оценкой</i>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -99,6 +104,8 @@ const matStacker = new THREE.MeshStandardMaterial({color: 0xffd700});
 const matStairs = new THREE.MeshStandardMaterial({color: 0x4682B4});
 const matRack = new THREE.MeshStandardMaterial({color: 0x2ecc71});
 const matRackBeam = new THREE.MeshStandardMaterial({color: 0xe67e22});
+const matReserve = new THREE.MeshStandardMaterial({color: 0x9b59b6, transparent: true, opacity: 0.7});
+const matReserveBeam = new THREE.MeshStandardMaterial({color: 0xc39bd3, transparent: true, opacity: 0.7});
 
 const matWindowGlass = new THREE.MeshStandardMaterial({
     color: 0xFFFFFF, transparent: true, opacity: 0.3,
@@ -129,29 +136,23 @@ addWall(-18, 2.5, 0, 0.2, 5, 36);
 addWall(18, 2.5, 0, 0.2, 5, 36);
 
 // ===== ОКНА =====
-// 12 окон на правой стене (AJ1:AJ36)
 for (let i = 0; i < 12; i++) {
     const zPos = -16.5 + i * 3.0;
     const yPos = 2.0 + (1.3 / 2);
-    
     const frame = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.5, 2.6), matWindowFrame);
     frame.position.set(17.9, yPos, zPos);
     scene.add(frame);
-    
     const glass = new THREE.Mesh(new THREE.BoxGeometry(0.05, 1.3, 2.4), matWindowGlass);
     glass.position.set(17.9, yPos, zPos);
     scene.add(glass);
 }
 
-// 1 дополнительное окно на фронтальной стене (AH1)
 const frontWindowX = 15;
 const frontWindowZ = -17.9;
 const frontWindowY = 2.0 + (1.3 / 2);
-
 const frontFrame = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.5, 0.15), matWindowFrame);
 frontFrame.position.set(frontWindowX, frontWindowY, frontWindowZ);
 scene.add(frontFrame);
-
 const frontGlass = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.3, 0.05), matWindowGlass);
 frontGlass.position.set(frontWindowX, frontWindowY, frontWindowZ);
 scene.add(frontGlass);
@@ -262,35 +263,37 @@ for (let row = 0; row < 2; row++) {
 const variant1Group = new THREE.Group();
 const variant2Group = new THREE.Group();
 const variant3Group = new THREE.Group();
+const variant4Group = new THREE.Group();
+const variant5Group = new THREE.Group();
 scene.add(variant1Group);
 scene.add(variant2Group);
 scene.add(variant3Group);
+scene.add(variant4Group);
+scene.add(variant5Group);
 
 // ===== ФУНКЦИЯ СОЗДАНИЯ СТЕЛЛАЖА =====
-function createRack(x, z, width, depth, height, numLevels, beamHeights, group) {
+function createRack(x, z, width, depth, height, numLevels, beamHeights, group, matRackCustom = matRack, matBeamCustom = matRackBeam) {
     const numPolesZ = Math.floor(depth / 2.7) + 1;
     const spacingZ = depth / (numPolesZ - 1);
     
-    // Стойки
     for (let i = 0; i < numPolesZ; i++) {
         const pz = z - depth/2 + i * spacingZ;
         for (let side = -1; side <= 1; side += 2) {
             const px = x + side * width/2;
-            const pole = new THREE.Mesh(new THREE.BoxGeometry(0.1, height, 0.1), matRack);
+            const pole = new THREE.Mesh(new THREE.BoxGeometry(0.1, height, 0.1), matRackCustom);
             pole.position.set(px, height/2, pz);
             pole.castShadow = true;
             group.add(pole);
         }
     }
     
-    // Балки и паллеты
     for (let level = 0; level < numLevels; level++) {
         const beamY = beamHeights[level];
         for (let i = 0; i < numPolesZ - 1; i++) {
             const pz = z - depth/2 + i * spacingZ + spacingZ/2;
             for (let side = -1; side <= 1; side += 2) {
                 const px = x + side * width/2;
-                const beam = new THREE.Mesh(new THREE.BoxGeometry(width, 0.1, spacingZ), matRackBeam);
+                const beam = new THREE.Mesh(new THREE.BoxGeometry(width, 0.1, spacingZ), matBeamCustom);
                 beam.position.set(px, beamY, pz);
                 group.add(beam);
             }
@@ -317,25 +320,50 @@ function buildVariant1() {
     createRack(13.5, 11.5, 1, 11, 2.5, 2, [0, 1.2], variant1Group);
     createRack(-17.5, -12, 1, 12, 2.5, 2, [0, 1.2], variant1Group);
     createRack(-13.5, -12, 1, 12, 2.5, 2, [0, 1.2], variant1Group);
-    addLabel('ВАРИАНТ 1: 4 стеллажа', [0, 7, 0], 8);
+    addLabel('ВАРИАНТ 1: 4 коротких стеллажа', [0, 7, 0], 8);
 }
 
 // ===== ВАРИАНТ 2 =====
 function buildVariant2() {
+    createRack(17.5, 1, 1, 32, 2.5, 2, [0, 1.2], variant2Group);
     createRack(-17.5, -4, 1, 28, 2.5, 2, [0, 1.2], variant2Group);
-    addLabel('ВАРИАНТ 2: 1 стеллаж (слева)', [0, 7, 0], 8);
+    addLabel('ВАРИАНТ 2: 2 длинных стеллажа', [0, 7, 0], 8);
 }
 
 // ===== ВАРИАНТ 3 =====
 function buildVariant3() {
     createRack(7.5, 6.5, 1, 13, 5, 4, [0, 1.2, 2.5, 3.8], variant3Group);
     createRack(-7.5, 4.5, 1, 13, 5, 4, [0, 1.2, 2.5, 3.8], variant3Group);
-    addLabel('ВАРИАНТ 3: 2 высоких стеллажа', [0, 7, 0], 8);
+    addLabel('ВАРИАНТ 3: 2 высоких стеллажа (5 м)', [0, 7, 0], 8);
+}
+
+// ===== ВАРИАНТ 4: ОДИН РЯД У ГЛУХОЙ СТЕНЫ (A2:A28) =====
+// X = -17.5 (левая стена), Z от -16.5 до 9.5, длина 26 м
+function buildVariant4() {
+    createRack(-17.5, -3.5, 1, 26, 2.5, 2, [0, 1.2], variant4Group);
+    addLabel('ВАРИАНТ 4: 1 ряд у глухой стены', [0, 7, 0], 8);
+    addLabel('≈60 паллетомест', [-17.5, 5, -3.5], 5);
+}
+
+// ===== ВАРИАНТ 5: ОДИН РЯД + РЕЗЕРВ =====
+// Основной: A2:A28 (как В4)
+// Резерв: E2:E7 (X = -13.5, длина 6 м) — фиолетовый цвет
+function buildVariant5() {
+    // Основной ряд (зелёный)
+    createRack(-17.5, -3.5, 1, 26, 2.5, 2, [0, 1.2], variant5Group);
+    // Резервный ряд (фиолетовый)
+    createRack(-13.5, -14, 1, 6, 2.5, 2, [0, 1.2], variant5Group, matReserve, matReserveBeam);
+    
+    addLabel('ВАРИАНТ 5: 1 ряд + резерв', [0, 7, 0], 8);
+    addLabel('≈60 мест сейчас', [-17.5, 5, -3.5], 5);
+    addLabel('+ 36 мест резерв', [-13.5, 5, -14], 4);
 }
 
 buildVariant1();
 buildVariant2();
 buildVariant3();
+buildVariant4();
+buildVariant5();
 
 // ===== ПОДПИСИ =====
 function addLabel(text, pos, scale = 4) {
@@ -356,7 +384,6 @@ function addLabel(text, pos, scale = 4) {
 }
 
 addLabel('ОКНА (12+1)', [17, 4, 0], 6);
-addLabel('ФРОНТ. ОКНО (AH1)', [15, 5, -17], 5);
 addLabel('ВТОРОЙ ЭТАЖ', [0, 5, -2.5], 6);
 addLabel('ОФИС', [0, 4.5, 16], 4);
 addLabel('САНУЗЕЛ', [-16, 4.5, 14.5], 3);
@@ -367,13 +394,14 @@ function showVariant(n) {
     variant1Group.visible = (n === 1);
     variant2Group.visible = (n === 2);
     variant3Group.visible = (n === 3);
+    variant4Group.visible = (n === 4);
+    variant5Group.visible = (n === 5);
     document.querySelectorAll('.btn').forEach((btn, i) => {
         btn.classList.toggle('active', i + 1 === n);
     });
 }
-showVariant(2);
+showVariant(4); // По умолчанию показываем рекомендованный Вариант 4
 
-// ===== АНИМАЦИЯ =====
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
